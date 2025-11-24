@@ -47,7 +47,7 @@ interface TestUtils {
         return (1..size).map { supplier.invoke() }
     }
 
-    fun randomLong(upperLimit: Long = 1000L): Long = RandomUtils.nextLong(0, upperLimit)
+    fun randomLong(upperLimit: Long = 1000L): Long = RandomUtils.secure().randomLong(1, upperLimit)
 
     fun <K, V> randomMap(maxSize: Int = 3, keySupplier: () -> K, valueSupplier: () -> V): Map<K, V> {
         val size = RandomUtils.secure().randomInt(1, maxSize)
