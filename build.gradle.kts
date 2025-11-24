@@ -1,10 +1,6 @@
 plugins {
     kotlin("jvm") version "2.2.10" apply false
-    kotlin("plugin.allopen") version "2.2.10" apply false
-    kotlin("plugin.spring") version "2.2.10" apply false
-    id("com.google.cloud.tools.jib") version "3.4.1" apply false
     id("io.spring.dependency-management") version "1.1.7" apply false
-    id("org.springframework.boot") version "3.5.5" apply false
 }
 
 allprojects {
@@ -26,5 +22,18 @@ subprojects {
         apply(plugin = "java-library")
         apply(plugin = "maven-publish")
         apply(plugin = "signing")
+    }
+
+    if (!isBom) {
+        extensions.configure<JavaPluginExtension> {
+            toolchain {
+                languageVersion.set(JavaLanguageVersion.of(21))
+            }
+            withSourcesJar()
+            withJavadocJar()
+        }
+        tasks.withType<Test> {
+            useJUnitPlatform()
+        }
     }
 }

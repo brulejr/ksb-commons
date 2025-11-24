@@ -12,19 +12,3 @@ dependencies {
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
-
-tasks.withType<Test> {
-    useJUnitPlatform()
-}
-
-java {
-    toolchain {
-        languageVersion.set(JavaLanguageVersion.of(21))
-    }
-    withSourcesJar()
-    withJavadocJar()
-}
-
-kotlin {
-    jvmToolchain(21)
-}
