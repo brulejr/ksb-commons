@@ -14,3 +14,17 @@ allprojects {
         mavenCentral()
     }
 }
+
+subprojects {
+    val isBom = (name == "dependency-bom")
+
+    if (isBom) {
+        apply(plugin = "java-platform")
+    } else {
+        apply(plugin = "org.jetbrains.kotlin.jvm")
+        apply(plugin = "io.spring.dependency-management")
+        apply(plugin = "java-library")
+        apply(plugin = "maven-publish")
+        apply(plugin = "signing")
+    }
+}

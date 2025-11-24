@@ -1,11 +1,3 @@
-plugins {
-    kotlin("jvm")
-    kotlin("plugin.allopen")
-    `java-library`
-    `maven-publish`
-    signing
-}
-
 dependencies {
     implementation(platform(project(":dependency-bom")))
 

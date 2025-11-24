@@ -1,7 +1,3 @@
-plugins {
-    `java-platform`
-}
-
 dependencies {
     constraints {
         // development dependencies
