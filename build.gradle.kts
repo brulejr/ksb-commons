@@ -2,15 +2,35 @@ import org.gradle.api.plugins.JavaPluginExtension
 import org.gradle.api.publish.PublishingExtension
 import org.gradle.api.publish.maven.MavenPublication
 import org.gradle.plugins.signing.SigningExtension
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
+import org.gradle.kotlin.dsl.DependencyHandlerScope
+
+// ---------------------------------------------------------------------
+// Helper to define testImplementation without relying on generated accessors
+// ---------------------------------------------------------------------
+fun DependencyHandlerScope.testImplementation(dependencyNotation: Any) {
+    add("testImplementation", dependencyNotation)
+}
+
+// All modules that should be published to OSSRH/Maven Central
+val publishableModules = listOf(
+    "ksb-dependency-bom",
+    "ksb-commons-core",
+    "ksb-commons-ms-client",
+    "ksb-commons-ms-core",
+    "ksb-commons-test"
+)
 
 plugins {
+    // Kotlin + Spring dependency-management are declared here, but not applied to root
     kotlin("jvm") version "2.2.10" apply false
     id("io.spring.dependency-management") version "1.1.7" apply false
 }
 
 allprojects {
     group = "io.jrb.labs"
-    version = "0.1.0"
+    version = "0.1.0-SNAPSHOT" // change to X.Y.Z-SNAPSHOT for dev, X.Y.Z for release
 
     repositories {
         mavenCentral()
@@ -19,9 +39,9 @@ allprojects {
 
 subprojects {
     val isBom = (name == "ksb-dependency-bom")
-    val isPublishable = name in setOf("ksb-dependency-bom", "common-core")
+    val isPublishable = name in publishableModules
 
-    // Plugins per type
+    // --- Plugins per module type ---
     if (isBom) {
         apply(plugin = "java-platform")
     } else {
@@ -35,8 +55,9 @@ subprojects {
         apply(plugin = "signing")
     }
 
-    // Common Java/Kotlin config for non-BOM projects
+    // --- Common Java/Kotlin config for normal modules (non-BOM) ---
     if (!isBom) {
+        // Java toolchain + sources/javadoc jars
         extensions.configure<JavaPluginExtension> {
             toolchain {
                 languageVersion.set(JavaLanguageVersion.of(21))
@@ -45,19 +66,34 @@ subprojects {
             withJavadocJar()
         }
 
-        tasks.withType<Test> {
+        // Kotlin compiler options (new DSL)
+        tasks.withType<KotlinCompile>().configureEach {
+            compilerOptions {
+                jvmTarget.set(JvmTarget.JVM_21)
+                freeCompilerArgs.add("-Xjsr305=strict")
+            }
+        }
+
+        tasks.withType<Test>().configureEach {
             useJUnitPlatform()
+        }
+
+        // Shared test dependency (using our helper)
+        dependencies {
+            testImplementation(kotlin("test"))
         }
     }
 
-    // Publishing config for BOM + other modules
+    // --- Publishing config for BOM + other modules ---
     if (isPublishable) {
         configure<PublishingExtension> {
             publications {
                 create<MavenPublication>("maven") {
                     if (isBom) {
+                        // Publish the BOM
                         from(components["javaPlatform"])
                     } else {
+                        // Publish normal Java/Kotlin library
                         from(components["java"])
                     }
 
@@ -85,7 +121,7 @@ subprojects {
                         }
                         scm {
                             url.set("https://github.com/brulejr/${rootProject.name}")
-                            connection.set("scm:git:git://github.com/brulejr/${rootProject.name}.git")
+                            connection.set("scm:git:git://github.com/${rootProject.name}.git")
                             developerConnection.set("scm:git:ssh://github.com:brulejr/${rootProject.name}.git")
                         }
                     }
@@ -113,11 +149,13 @@ subprojects {
             }
         }
 
+        // --- Signing: enabled only when keys are configured ---
         configure<SigningExtension> {
             val signingKey = findProperty("signingKey") as String? ?: System.getenv("SIGNING_KEY")
             val signingPassword = findProperty("signingPassword") as String? ?: System.getenv("SIGNING_PASSWORD")
 
             if (!signingKey.isNullOrBlank() && !signingPassword.isNullOrBlank()) {
+                // In-memory PGP key (good for CI)
                 useInMemoryPgpKeys(signingKey, signingPassword)
 
                 val publishing = extensions.getByType<PublishingExtension>()
@@ -128,5 +166,35 @@ subprojects {
             }
         }
     }
+}
 
+// --- Release task: build + sign + publish for all publishable modules ---
+tasks.register("release") {
+    group = "release"
+    description = "Builds, signs, and publishes all publishable modules to OSSRH."
+
+    doFirst {
+        // 1) Require non-SNAPSHOT version
+        if (version.toString().endsWith("SNAPSHOT")) {
+            throw GradleException("Release requires a non-SNAPSHOT version (current: $version)")
+        }
+
+        // 2) Require signing configured
+        val signingKey = findProperty("signingKey") as String? ?: System.getenv("SIGNING_KEY")
+        val signingPassword = findProperty("signingPassword") as String? ?: System.getenv("SIGNING_PASSWORD")
+
+        if (signingKey.isNullOrBlank() || signingPassword.isNullOrBlank()) {
+            throw GradleException(
+                "Release requires signingKey/signingPassword (or SIGNING_KEY/SIGNING_PASSWORD) to be configured."
+            )
+        }
+    }
+
+    // Clean everything first
+    dependsOn("clean")
+
+    // Publish each publishable subproject
+    publishableModules.forEach { moduleName ->
+        dependsOn(":$moduleName:publish")
+    }
 }
