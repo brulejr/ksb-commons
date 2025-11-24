@@ -2,16 +2,6 @@ import org.gradle.api.plugins.JavaPluginExtension
 import org.gradle.api.publish.PublishingExtension
 import org.gradle.api.publish.maven.MavenPublication
 import org.gradle.plugins.signing.SigningExtension
-import org.jetbrains.kotlin.gradle.dsl.JvmTarget
-import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
-import org.gradle.kotlin.dsl.DependencyHandlerScope
-
-// ---------------------------------------------------------------------
-// Helper to define testImplementation without relying on generated accessors
-// ---------------------------------------------------------------------
-fun DependencyHandlerScope.testImplementation(dependencyNotation: Any) {
-    add("testImplementation", dependencyNotation)
-}
 
 // All modules that should be published to OSSRH/Maven Central
 val publishableModules = listOf(
@@ -23,14 +13,13 @@ val publishableModules = listOf(
 )
 
 plugins {
-    // Kotlin + Spring dependency-management are declared here, but not applied to root
-    kotlin("jvm") version "2.2.10" apply false
+    // Kotlin plugin is provided via buildSrc convention; no need to declare it here
     id("io.spring.dependency-management") version "1.1.7" apply false
 }
 
 allprojects {
     group = "io.jrb.labs"
-    version = "0.1.0-SNAPSHOT" // change to X.Y.Z-SNAPSHOT for dev, X.Y.Z for release
+    version = "0.1.0-SNAPSHOT" // X.Y.Z-SNAPSHOT for dev, X.Y.Z for release
 
     repositories {
         mavenCentral()
@@ -45,9 +34,10 @@ subprojects {
     if (isBom) {
         apply(plugin = "java-platform")
     } else {
-        apply(plugin = "org.jetbrains.kotlin.jvm")
+        // convention plugin for Kotlin/JVM libraries
+        apply(plugin = "io.jrb.labs.kotlin-library")
+        // plus Spring dependency management
         apply(plugin = "io.spring.dependency-management")
-        apply(plugin = "java-library")
     }
 
     if (isPublishable) {
@@ -55,32 +45,12 @@ subprojects {
         apply(plugin = "signing")
     }
 
-    // --- Common Java/Kotlin config for normal modules (non-BOM) ---
+    // --- Java toolchain for non-BOM modules ---
     if (!isBom) {
-        // Java toolchain + sources/javadoc jars
         extensions.configure<JavaPluginExtension> {
             toolchain {
                 languageVersion.set(JavaLanguageVersion.of(21))
             }
-            withSourcesJar()
-            withJavadocJar()
-        }
-
-        // Kotlin compiler options (new DSL)
-        tasks.withType<KotlinCompile>().configureEach {
-            compilerOptions {
-                jvmTarget.set(JvmTarget.JVM_21)
-                freeCompilerArgs.add("-Xjsr305=strict")
-            }
-        }
-
-        tasks.withType<Test>().configureEach {
-            useJUnitPlatform()
-        }
-
-        // Shared test dependency (using our helper)
-        dependencies {
-            testImplementation(kotlin("test"))
         }
     }
 
@@ -121,7 +91,7 @@ subprojects {
                         }
                         scm {
                             url.set("https://github.com/brulejr/${rootProject.name}")
-                            connection.set("scm:git:git://github.com/${rootProject.name}.git")
+                            connection.set("scm:git:git://github.com/brulejr/${rootProject.name}.git")
                             developerConnection.set("scm:git:ssh://github.com:brulejr/${rootProject.name}.git")
                         }
                     }
