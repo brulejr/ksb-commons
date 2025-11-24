@@ -1,6 +1,9 @@
 plugins {
     kotlin("jvm")
     kotlin("plugin.allopen")
+    `java-library`
+    `maven-publish`
+    signing
 }
 
 dependencies {
@@ -20,4 +23,16 @@ dependencies {
 
 tasks.withType<Test> {
     useJUnitPlatform()
+}
+
+java {
+    toolchain {
+        languageVersion.set(JavaLanguageVersion.of(21))
+    }
+    withSourcesJar()
+    withJavadocJar()
+}
+
+kotlin {
+    jvmToolchain(21)
 }
