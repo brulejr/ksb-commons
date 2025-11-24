@@ -1,5 +1,5 @@
 dependencies {
-    implementation(platform(project(":dependency-bom")))
+    implementation(platform(project(":ksb-dependency-bom")))
 
     api("io.mockk:mockk")
     api("org.apache.commons:commons-lang3")

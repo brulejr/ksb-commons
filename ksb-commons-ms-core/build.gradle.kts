@@ -1,10 +1,14 @@
 dependencies {
     implementation(platform(project(":ksb-dependency-bom")))
 
-    api("org.jetbrains.kotlin:kotlin-reflect")
-    api("org.jetbrains.kotlinx:kotlinx-coroutines-reactor")
-    api("org.slf4j:slf4j-api")
+    api(project(":ksb-commons-core"))
+    api(project(":ksb-commons-ms-client"))
 
+    api("io.projectreactor:reactor-core")
+    api("org.springframework:spring-context")
+    api("org.springframework:spring-web")
+
+    testImplementation(project(":ksb-commons-core"))
     testImplementation(project(":ksb-commons-test"))
     testImplementation("org.springframework.boot:spring-boot-starter-test")
     testImplementation("io.projectreactor:reactor-test")

@@ -1,6 +1,8 @@
 rootProject.name = "ksb-commons"
 include(
-    "dependency-bom",
+    "ksb-dependency-bom",
     "ksb-commons-test",
-    "ksb-commons-core"
+    "ksb-commons-core",
+    "ksb-commons-ms-client",
+    "ksb-commons-ms-core"
 )

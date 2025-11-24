@@ -12,7 +12,7 @@ allprojects {
 }
 
 subprojects {
-    val isBom = (name == "dependency-bom")
+    val isBom = (name == "ksb-dependency-bom")
 
     if (isBom) {
         apply(plugin = "java-platform")
