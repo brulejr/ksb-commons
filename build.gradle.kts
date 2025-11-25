@@ -57,11 +57,16 @@ subprojects {
         }
     }
 
-    // --- Publishing config for BOM + other modules ---
+// --- Publishing config for BOM + other modules ---
     if (isPublishable) {
-        plugins.withId("org.jetbrains.kotlin.jvm") {
-            apply(plugin = "org.jetbrains.dokka")
+
+        if (!isBom) {
+            // Only apply Dokka to JVM modules (skip BOM)
+            plugins.withId("org.jetbrains.kotlin.jvm") {
+                apply(plugin = "org.jetbrains.dokka")
+            }
         }
+
         configure<PublishingExtension> {
             publications {
                 create<MavenPublication>("maven") {
@@ -105,22 +110,44 @@ subprojects {
             }
 
             repositories {
+
+                // --- Always available: GitHub Packages (works great in CI) ---
                 maven {
-                    name = "OSSRH"
-                    val isSnapshot = version.toString().endsWith("SNAPSHOT")
-                    url = uri(
-                        if (isSnapshot) {
-                            "https://s01.oss.sonatype.org/content/repositories/snapshots/"
-                        } else {
-                            "https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/"
-                        }
-                    )
+                    name = "GitHubPackages"
+                    url = uri("https://maven.pkg.github.com/brulejr/${rootProject.name}")
                     credentials {
-                        username = findProperty("ossrhUsername") as String?
-                            ?: System.getenv("OSSRH_USERNAME")
-                        password = findProperty("ossrhPassword") as String?
-                            ?: System.getenv("OSSRH_PASSWORD")
+                        // GitHub Actions will provide these
+                        username = System.getenv("GITHUB_ACTOR")
+                            ?: (findProperty("gpr.user") as String?)  // optional local override
+                        password = System.getenv("GITHUB_TOKEN")
+                            ?: (findProperty("gpr.key") as String?)   // optional local override
                     }
+                }
+
+                // --- Conditionally available: OSSRH (only if creds are configured) ---
+                val ossrhUser = (findProperty("ossrhUsername") as String?)
+                    ?: System.getenv("OSSRH_USERNAME")
+                val ossrhPass = (findProperty("ossrhPassword") as String?)
+                    ?: System.getenv("OSSRH_PASSWORD")
+
+                if (!ossrhUser.isNullOrBlank() && !ossrhPass.isNullOrBlank()) {
+                    maven {
+                        name = "OSSRH"
+                        val isSnapshot = version.toString().endsWith("SNAPSHOT")
+                        url = uri(
+                            if (isSnapshot) {
+                                "https://s01.oss.sonatype.org/content/repositories/snapshots/"
+                            } else {
+                                "https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/"
+                            }
+                        )
+                        credentials {
+                            username = ossrhUser
+                            password = ossrhPass
+                        }
+                    }
+                } else {
+                    logger.lifecycle("OSSRH credentials not configured; skipping OSSRH repository for ${project.path}")
                 }
             }
         }
