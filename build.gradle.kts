@@ -30,12 +30,6 @@ allprojects {
 }
 
 subprojects {
-
-    // Only apply Dokka where we have Kotlin JVM code
-    plugins.withId("org.jetbrains.kotlin.jvm") {
-        apply(plugin = "org.jetbrains.dokka")
-    }
-
     val isBom = (name == "ksb-dependency-bom")
     val isPublishable = name in publishableModules
 
@@ -65,6 +59,9 @@ subprojects {
 
     // --- Publishing config for BOM + other modules ---
     if (isPublishable) {
+        plugins.withId("org.jetbrains.kotlin.jvm") {
+            apply(plugin = "org.jetbrains.dokka")
+        }
         configure<PublishingExtension> {
             publications {
                 create<MavenPublication>("maven") {
