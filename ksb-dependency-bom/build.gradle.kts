@@ -1,5 +1,11 @@
 dependencies {
     constraints {
+        // artifact dependencies
+        api("io.jrb.labs:ksb-commons-core:${project.version}")
+        api("io.jrb.labs:ksb-commons-ms-client:${project.version}")
+        api("io.jrb.labs:ksb-commons-ms-core:${project.version}")
+        api("io.jrb.labs:ksb-commons-test:${project.version}")
+
         // development dependencies
         api(libs.jacksonDatabind)
         api(libs.hivemqMqttClient)
