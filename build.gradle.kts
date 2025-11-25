@@ -2,6 +2,7 @@ import org.gradle.api.plugins.JavaPluginExtension
 import org.gradle.api.publish.PublishingExtension
 import org.gradle.api.publish.maven.MavenPublication
 import org.gradle.plugins.signing.SigningExtension
+import org.jetbrains.dokka.gradle.DokkaMultiModuleTask
 
 // All modules that should be published to OSSRH/Maven Central
 val publishableModules = listOf(
@@ -15,6 +16,8 @@ val publishableModules = listOf(
 plugins {
     // Kotlin plugin is provided via buildSrc convention; no need to declare it here
     id("io.spring.dependency-management") version "1.1.7" apply false
+
+    id("org.jetbrains.dokka") version "1.9.20"
 }
 
 allprojects {
@@ -27,6 +30,12 @@ allprojects {
 }
 
 subprojects {
+
+    // Only apply Dokka where we have Kotlin JVM code
+    plugins.withId("org.jetbrains.kotlin.jvm") {
+        apply(plugin = "org.jetbrains.dokka")
+    }
+
     val isBom = (name == "ksb-dependency-bom")
     val isPublishable = name in publishableModules
 
@@ -167,4 +176,8 @@ tasks.register("release") {
     publishableModules.forEach { moduleName ->
         dependsOn(":$moduleName:publish")
     }
+}
+
+tasks.withType<DokkaMultiModuleTask>().configureEach {
+    outputDirectory.set(buildDir.resolve("dokka/htmlMultiModule"))
 }

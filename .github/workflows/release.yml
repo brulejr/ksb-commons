@@ -1,0 +1,44 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write      # needed if you later push docs or create releases
+      packages: write      # needed to publish to GitHub Packages
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: gradle
+
+      - name: Verify build and tests
+        run: ./gradlew clean build --no-daemon
+
+      - name: Generate Dokka docs
+        # adjust task/path to match your Dokka setup
+        run: ./gradlew dokkaHtmlMultiModule --no-daemon
+
+      - name: Publish artifacts to GitHub Packages
+        env:
+          GITHUB_ACTOR: ${{ github.actor }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: ./gradlew publish --no-daemon
+
+      - name: Upload docs HTML as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ksb-commons-docs
+          # adjust to your actual Dokka output directory
+          path: build/dokka/htmlMultiModule
