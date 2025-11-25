@@ -22,7 +22,7 @@ plugins {
 
 allprojects {
     group = "io.jrb.labs"
-    version = "0.1.1" // X.Y.Z-SNAPSHOT for dev, X.Y.Z for release
+    version = "0.2.0-SNAPSHOT" // X.Y.Z-SNAPSHOT for dev, X.Y.Z for release
 
     repositories {
         mavenCentral()
