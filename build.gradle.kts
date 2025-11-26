@@ -4,6 +4,8 @@ import org.gradle.api.publish.maven.MavenPublication
 import org.gradle.plugins.signing.SigningExtension
 import org.jetbrains.dokka.gradle.DokkaMultiModuleTask
 
+val ksbVersion: String by project
+
 // All modules that should be published to OSSRH/Maven Central
 val publishableModules = listOf(
     "ksb-dependency-bom",
@@ -22,7 +24,7 @@ plugins {
 
 allprojects {
     group = "io.jrb.labs"
-    version = "0.2.0" // X.Y.Z-SNAPSHOT for dev, X.Y.Z for release
+    version = ksbVersion // X.Y.Z-SNAPSHOT for dev, X.Y.Z for release
 
     repositories {
         mavenCentral()

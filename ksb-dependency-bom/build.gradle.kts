@@ -1,10 +1,12 @@
+val ksbVersion: String by project
+
 dependencies {
     constraints {
         // artifact dependencies
-        api("io.jrb.labs:ksb-commons-core:${project.version}")
-        api("io.jrb.labs:ksb-commons-ms-client:${project.version}")
-        api("io.jrb.labs:ksb-commons-ms-core:${project.version}")
-        api("io.jrb.labs:ksb-commons-test:${project.version}")
+        api("io.jrb.labs:ksb-commons-core:$ksbVersion")
+        api("io.jrb.labs:ksb-commons-ms-client:$ksbVersion")
+        api("io.jrb.labs:ksb-commons-ms-core:$ksbVersion")
+        api("io.jrb.labs:ksb-commons-test:$ksbVersion")
 
         // development dependencies
         api(libs.jacksonDatabind)
