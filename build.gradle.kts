@@ -63,7 +63,7 @@ subprojects {
 // --- Publishing config for BOM + other modules ---
     if (isPublishable) {
 
-        if (!isBom) {
+        if (!isBom && (name != "ksb-spring-boot-starter-reactive")) {
             // Only apply Dokka to JVM modules (skip BOM)
             plugins.withId("org.jetbrains.kotlin.jvm") {
                 apply(plugin = "org.jetbrains.dokka")
