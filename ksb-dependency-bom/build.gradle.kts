@@ -7,6 +7,7 @@ dependencies {
         api("io.jrb.labs:ksb-commons-ms-client:$ksbVersion")
         api("io.jrb.labs:ksb-commons-ms-core:$ksbVersion")
         api("io.jrb.labs:ksb-commons-test:$ksbVersion")
+        api("io.jrb.labs:ksb-spring-boot-starter-reactive:${ksbVersion}")
 
         // development dependencies
         api(libs.jacksonDatabind)
@@ -21,6 +22,8 @@ dependencies {
         api(libs.springWeb)
         api(libs.springWebflux)
         api(libs.springBoot)
+        api(libs.springStarterActuator)
+        api(libs.springStarterWebflux)
 
         // test dependencies
         api(libs.mockk)

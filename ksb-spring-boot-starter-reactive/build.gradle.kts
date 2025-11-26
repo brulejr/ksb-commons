@@ -20,7 +20,6 @@ dependencies {
     // Spring Boot starters – versions come from the BOM above
     api("org.springframework.boot:spring-boot-starter-webflux")
     api("org.springframework.boot:spring-boot-starter-actuator")
-    api("org.springframework.boot:spring-boot-starter-data-mongodb-reactive")
 }
 
 // Optional, just for a nicer manifest

@@ -30,6 +30,9 @@ springContext = { module = "org.springframework:spring-context", version.ref = "
 springWeb = { module = "org.springframework:spring-web", version.ref = "springFramework" }
 springWebflux = { module = "org.springframework:spring-webflux", version.ref = "springFramework" }
 
+springStarterActuator = { module = "org.springframework.boot:spring-boot-starter-actuator", version.ref = "springBoot" }
+springStarterWebflux = { module = "org.springframework.boot:spring-boot-starter-webflux", version.ref = "springBoot" }
+
 springBoot = { module = "org.springframework.boot:spring-boot", version.ref = "springBoot" }
 springBootStarterTest = { module = "org.springframework.boot:spring-boot-starter-test", version.ref = "springBoot" }
 
