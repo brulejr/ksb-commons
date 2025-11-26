@@ -4,7 +4,6 @@ dependencies {
     api(project(":ksb-commons-core"))
     api(project(":ksb-commons-ms-client"))
 
-    api("io.projectreactor:reactor-core")
     api("org.springframework:spring-context")
     api("org.springframework:spring-web")
 

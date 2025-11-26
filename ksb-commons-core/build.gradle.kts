@@ -1,6 +1,10 @@
 dependencies {
     implementation(platform(project(":ksb-dependency-bom")))
 
+    api("com.fasterxml.jackson.core:jackson-databind")
+    api("com.fasterxml.jackson.module:jackson-module-kotlin")
+    api("io.projectreactor:reactor-core")
+    api("io.projectreactor.kotlin:reactor-kotlin-extensions")
     api("org.jetbrains.kotlin:kotlin-reflect")
     api("org.jetbrains.kotlinx:kotlinx-coroutines-reactor")
     api("org.slf4j:slf4j-api")
