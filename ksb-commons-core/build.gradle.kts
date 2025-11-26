@@ -15,9 +15,8 @@ dependencies {
 
     // test dependencies
     testImplementation(project(":ksb-commons-test"))
-    testImplementation("org.springframework.boot:spring-boot-starter-test")
-    testImplementation("io.projectreactor:reactor-test")
-    testImplementation("org.jetbrains.kotlin:kotlin-test-junit5")
+    testImplementation(libs.mockk)
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test")
+
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
