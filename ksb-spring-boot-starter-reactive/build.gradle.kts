@@ -9,14 +9,21 @@ java {
 }
 
 dependencies {
-    api("io.jrb.labs:ksb-commons-core")
-    api("io.jrb.labs:ksb-commons-ms-client")
-    api("io.jrb.labs:ksb-commons-ms-core")
+    // Use your BOM inside this module to get aligned versions
+    api(platform(project(":ksb-dependency-bom")))
+
+    // If you want the starter to bring in your common libs as well:
+    api(project(":ksb-commons-core"))
+    api(project(":ksb-commons-ms-core"))
+    api(project(":ksb-commons-ms-client"))
+
+    // Spring Boot starters – versions come from the BOM above
     api("org.springframework.boot:spring-boot-starter-webflux")
     api("org.springframework.boot:spring-boot-starter-actuator")
+    api("org.springframework.boot:spring-boot-starter-data-mongodb-reactive")
 }
 
-// Optional but nice: mark it as a “starter” in the pom (purely descriptive)
+// Optional, just for a nicer manifest
 tasks.withType<Jar>().configureEach {
     manifest {
         attributes["Implementation-Title"] = "ksb-spring-boot-starter-reactive"
