@@ -18,7 +18,9 @@ springFramework = "6.2.10"
 [libraries]
 commonsLang3 = { module = "org.apache.commons:commons-lang3", version.ref = "commonsLang3" }
 hivemqMqttClient = { module = "com.hivemq:hivemq-mqtt-client", version.ref = "hivemq" }
+
 jacksonDatabind = { module = "com.fasterxml.jackson.core:jackson-databind", version.ref = "jackson" }
+jacksonModuleKotlin = { module = "com.fasterxml.jackson.module:jackson-module-kotlin", version.ref = "jackson" }
 
 reactorCore = { module = "io.projectreactor:reactor-core", version.ref = "reactor" }
 reactorKotlinExtensions = { module = "io.projectreactor.kotlin:reactor-kotlin-extensions", version.ref = "reactorKotlin" }

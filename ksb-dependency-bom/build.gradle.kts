@@ -13,6 +13,7 @@ dependencies {
         api(libs.commonsLang3)
         api(libs.hivemqMqttClient)
         api(libs.jacksonDatabind)
+        api(libs.jacksonModuleKotlin)
         api(libs.kotlinxCoroutinesReactor)
         api(libs.kotlinReflect)
         api(libs.kotlinStdlib)
