@@ -1,6 +1,20 @@
 val ksbVersion: String by project
 
+// Needed if you want this platform to depend on another platform (Spring BOM)
+javaPlatform {
+    allowDependencies()
+}
+
 dependencies {
+
+    // 1) Extend Spring Boot's BOM
+    api(
+        platform(
+            "org.springframework.boot:spring-boot-dependencies:${libs.versions.springBoot.get()}"
+        )
+    )
+
+    // 2) Pin versions of your own modules in the BOM
     constraints {
         // artifact dependencies
         api("io.jrb.labs:ksb-commons-core:$ksbVersion")
@@ -12,30 +26,8 @@ dependencies {
         // development dependencies
         api(libs.commonsLang3)
         api(libs.hivemqMqttClient)
-        api(libs.jacksonDatabind)
-        api(libs.jacksonModuleKotlin)
-        api(libs.kotlinxCoroutinesReactor)
-        api(libs.kotlinReflect)
-        api(libs.kotlinStdlib)
-        api(libs.reactorCore)
-        api(libs.reactorKotlinExtensions)
-        api(libs.slf4jApi)
-        api(libs.springBoot)
-        api(libs.springContext)
-        api(libs.springWeb)
-        api(libs.springWebflux)
-        api(libs.springStarterActuator)
-        api(libs.springStarterWebflux)
 
         // test dependencies
         api(libs.mockk)
-        api(libs.assertjCore)
-        api(libs.kotlinTestJunit5)
-        api(libs.kotlinxCoroutinesTest)
-        api(libs.junitJupiterParams)
-        api(libs.springBootStarterTest)
-        api(libs.reactorTest)
-        api(libs.springCloudStreamTestBinder)
-        api(libs.junitPlatformLauncher)
     }
 }

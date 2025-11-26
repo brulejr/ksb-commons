@@ -1,6 +1,7 @@
 dependencies {
     implementation(platform(project(":ksb-dependency-bom")))
 
+    // spring-managed dependencies
     api("com.fasterxml.jackson.core:jackson-databind")
     api("com.fasterxml.jackson.module:jackson-module-kotlin")
     api("io.projectreactor:reactor-core")
@@ -9,6 +10,10 @@ dependencies {
     api("org.jetbrains.kotlinx:kotlinx-coroutines-reactor")
     api("org.slf4j:slf4j-api")
 
+    // additional dependencies
+    api(libs.commonsLang3)
+
+    // test dependencies
     testImplementation(project(":ksb-commons-test"))
     testImplementation("org.springframework.boot:spring-boot-starter-test")
     testImplementation("io.projectreactor:reactor-test")
