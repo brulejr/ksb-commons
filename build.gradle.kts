@@ -13,7 +13,8 @@ val publishableModules = listOf(
     "ksb-commons-ms-client",
     "ksb-commons-ms-core",
     "ksb-commons-test",
-    "ksb-spring-boot-starter-reactive"
+    "ksb-spring-boot-starter-reactive",
+    "ksb-spring-boot-starter-reactive-test"
 )
 
 plugins {
