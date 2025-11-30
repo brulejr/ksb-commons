@@ -22,7 +22,7 @@ dependencies {
         api("io.jrb.labs:ksb-commons-ms-core:$ksbVersion")
         api("io.jrb.labs:ksb-commons-test:$ksbVersion")
         api("io.jrb.labs:ksb-spring-boot-starter-reactive:${ksbVersion}")
-
+        api("io.jrb.labs:ksb-spring-boot-starter-reactive-test:${ksbVersion}")
         // development dependencies
         api(libs.commonsLang3)
         api(libs.hivemqMqttClient)
