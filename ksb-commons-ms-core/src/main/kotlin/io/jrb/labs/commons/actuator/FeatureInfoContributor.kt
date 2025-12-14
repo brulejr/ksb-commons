@@ -21,36 +21,19 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package io.jrb.labs.commons.eventbus
 
-import io.jrb.labs.commons.service.ControllableService
-import org.slf4j.LoggerFactory
-import kotlin.jvm.java
-import kotlin.jvm.javaClass
-import kotlin.reflect.KClass
+package io.jrb.labs.commons.actuator
 
-abstract class AbstractEventConsumer<G : Event, E : G> protected constructor (
-    private val kClass: KClass<E>,
-    private val eventBus: EventBus<G>,
-    systemEventBus: SystemEventBus
-) : ControllableService(systemEventBus) {
+interface FeatureInfoContributor {
 
-    protected val log = LoggerFactory.getLogger(javaClass)
+    /**
+     * stable key used under `features.<key>`
+     */
+    val key: String
 
-    private var subscription: EventBus.Subscription? = null
-
-    protected abstract suspend fun handleEvent(event: E)
-
-    override fun onStart() {
-        subscription = eventBus.subscribe(kClass.java) { event ->
-            log.debug("handling event: {}", event)
-            handleEvent(event)
-        }
-    }
-
-    override fun onStop() {
-        subscription?.cancel()
-        subscription = null
-    }
+    /**
+     * return ONLY non-secret, user-safe config/state
+     */
+    fun info(): Map<String, Any?>
 
 }
