@@ -26,9 +26,7 @@ package io.jrb.labs.commons.actuator
 
 import org.springframework.boot.actuate.info.Info
 import org.springframework.boot.actuate.info.InfoContributor
-import org.springframework.stereotype.Component
 
-@Component
 class FeaturesInfoContributor(
     private val contributors: List<FeatureInfoContributor>
 ) : InfoContributor {
