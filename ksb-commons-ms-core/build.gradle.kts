@@ -8,6 +8,7 @@ dependencies {
     api("org.springframework:spring-web")
     api("org.springframework.boot:spring-boot-actuator")
     api("org.springframework.data:spring-data-mongodb")
+    api("io.micrometer:micrometer-core")
 
     api(libs.hivemqMqttClient)
 

@@ -22,26 +22,14 @@
  * SOFTWARE.
  */
 
-package io.jrb.labs.commons.feature
+package io.jrb.labs.commons.metrics
 
 /**
- * Represents a descriptor for a specific feature, containing key metadata
- * to identify and describe the feature.
+ * Represents the state of a feature, providing two possible values: `DOWN` and `UP`.
  *
- * This class is used to define the properties associated with a feature,
- * which can be used for tracking, monitoring, or processing logic related
- * to the feature.
- *
- * @property application The name of the application to which the feature belongs.
- * @property featureId The unique identifier of the feature.
- * @property displayName The human-readable name of the feature.
- * @property description A detailed description of the feature.
- * @property configPrefix The configuration prefix associated with the feature.
+ * @property value An integer representation of the feature state.
  */
-data class FeatureDescriptor(
-    val application: String,
-    val featureId: String,
-    val displayName: String,
-    val description: String,
-    val configPrefix: String
-)
+enum class FeatureState(val value: Int) {
+    DOWN(0),
+    UP(1);
+}
