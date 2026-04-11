@@ -27,8 +27,13 @@ package io.jrb.labs.commons.workflow.engine
 import io.jrb.labs.commons.eventbus.Event
 import io.jrb.labs.commons.workflow.api.RecordedStepResult
 import io.jrb.labs.commons.workflow.api.StepResult
-import io.jrb.labs.commons.workflow.api.StepResult.*
+import io.jrb.labs.commons.workflow.api.StepResult.Errored
+import io.jrb.labs.commons.workflow.api.StepResult.Failed
+import io.jrb.labs.commons.workflow.api.StepResult.Ignored
+import io.jrb.labs.commons.workflow.api.StepResult.Success
+import io.jrb.labs.commons.workflow.api.StepResult.Waiting
 import io.jrb.labs.commons.workflow.api.WorkflowDefinition
+import io.jrb.labs.commons.workflow.api.WorkflowEvent
 import io.jrb.labs.commons.workflow.api.WorkflowHistoryEntry
 import io.jrb.labs.commons.workflow.api.WorkflowInstance
 import io.jrb.labs.commons.workflow.api.WorkflowRegistry
@@ -47,6 +52,16 @@ class DefaultWorkflowTrafficCop(
 ) : WorkflowTrafficCop {
 
     override suspend fun handleEvent(event: Event) {
+
+        val byInstance = (event as? WorkflowEvent)
+            ?.workflowInstanceId
+            ?.let { instanceStore.findByInstanceId(it) }
+
+        if (byInstance != null) {
+            advanceExistingWorkflow(byInstance, event)
+            return
+        }
+
         val byCorrelation = event.correlationId
             ?.let { instanceStore.findByCorrelationId(it) }
             .orEmpty()
