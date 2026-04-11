@@ -1,7 +1,7 @@
 /*
  * The MIT License (MIT)
  *
- * Copyright (c) 2025 Jon Brule <brulejr@gmail.com>
+ * Copyright (c) 2026 Jon Brule <brulejr@gmail.com>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -21,48 +21,19 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package io.jrb.labs.commons.eventbus
 
-import java.time.Instant
-import java.util.UUID
+package io.jrb.labs.commons.workflow.spi
 
-interface Event {
+import io.jrb.labs.commons.workflow.api.WorkflowInstance
 
-    /**
-     * The unique identifier for the event.
-     */
-    val eventId: String
-        get() = UUID.randomUUID().toString()
+interface WorkflowInstanceStore {
 
-    /**
-     * The name of the event, typically the simple class name.
-     */
-    val name: String
-        get() = javaClass.simpleName
+    suspend fun save(instance: WorkflowInstance): WorkflowInstance
 
-    /**
-     * The timestamp when the event occurred.
-     */
-    val occurredAt: Instant
-        get() = Instant.now()
+    suspend fun findByInstanceId(instanceId: String): WorkflowInstance?
 
-    /**
-     * Business-level correlation across related events.
-     * Example: orderId, requestId, alertId.
-     */
-    val correlationId: String?
-        get() = null
+    suspend fun findByCorrelationId(correlationId: String): List<WorkflowInstance>
 
-    /**
-     * The eventId of the event that directly caused this event.
-     */
-    val causationId: String?
-        get() = null
-
-    /**
-     * Optional extensible metadata for tracing, audit, tags, etc.
-     */
-    val metadata: Map<String, Any>
-        get() = emptyMap()
+    suspend fun findAll(): List<WorkflowInstance>
 
 }

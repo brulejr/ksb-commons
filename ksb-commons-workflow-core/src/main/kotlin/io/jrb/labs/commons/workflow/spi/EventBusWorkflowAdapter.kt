@@ -1,7 +1,7 @@
 /*
  * The MIT License (MIT)
  *
- * Copyright (c) 2025 Jon Brule <brulejr@gmail.com>
+ * Copyright (c) 2026 Jon Brule <brulejr@gmail.com>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -21,48 +21,22 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package io.jrb.labs.commons.eventbus
 
-import java.time.Instant
-import java.util.UUID
+package io.jrb.labs.commons.workflow.spi
 
-interface Event {
+import io.jrb.labs.commons.eventbus.Event
+import io.jrb.labs.commons.eventbus.EventBus
 
-    /**
-     * The unique identifier for the event.
-     */
-    val eventId: String
-        get() = UUID.randomUUID().toString()
+class EventBusWorkflowAdapter<E : Event>(
+    private val eventBus: EventBus<E>
+) : WorkflowEventPublisher, WorkflowEventSubscriber {
 
-    /**
-     * The name of the event, typically the simple class name.
-     */
-    val name: String
-        get() = javaClass.simpleName
+    override suspend fun publish(event: Event) {
+        @Suppress("UNCHECKED_CAST")
+        eventBus.publish(event as E)
+    }
 
-    /**
-     * The timestamp when the event occurred.
-     */
-    val occurredAt: Instant
-        get() = Instant.now()
-
-    /**
-     * Business-level correlation across related events.
-     * Example: orderId, requestId, alertId.
-     */
-    val correlationId: String?
-        get() = null
-
-    /**
-     * The eventId of the event that directly caused this event.
-     */
-    val causationId: String?
-        get() = null
-
-    /**
-     * Optional extensible metadata for tracing, audit, tags, etc.
-     */
-    val metadata: Map<String, Any>
-        get() = emptyMap()
+    override fun subscribeAll(handler: suspend (Event) -> Unit): EventBus.Subscription =
+        eventBus.subscribeAll { handler(it) }
 
 }

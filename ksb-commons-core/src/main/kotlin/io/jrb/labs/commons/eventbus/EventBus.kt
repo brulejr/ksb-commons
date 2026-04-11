@@ -26,30 +26,52 @@ package io.jrb.labs.commons.eventbus
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
-import kotlin.jvm.java
 
 open class EventBus<E : Event>(
     eventBusCapacity: Int = 100,
-    dispatcher: CoroutineDispatcher = kotlinx.coroutines.Dispatchers.Default
+    dispatcher: CoroutineDispatcher = Dispatchers.Default
 ) {
-    private val _scope = CoroutineScope(dispatcher + SupervisorJob())
-    private val _events = MutableSharedFlow<E>(extraBufferCapacity = eventBusCapacity)
 
+    private val scope = CoroutineScope(dispatcher + SupervisorJob())
+    private val events = MutableSharedFlow<E>(extraBufferCapacity = eventBusCapacity)
+
+    /**
+     * Publish an event to all subscribers.
+     */
     suspend fun publish(event: E) {
-        _events.emit(event)
+        events.emit(event)
     }
 
+    /**
+     * Publish an event to all subscribers.
+     */
     fun send(event: E) = runBlocking { publish(event) }
 
+    /**
+     * Catch-all subscription for consumers like the workflow traffic cop.
+     */
+    fun subscribeAll(handler: suspend (E) -> Unit): Subscription {
+        val job = scope.launch(start = CoroutineStart.UNDISPATCHED) {
+            events.collect { handler(it) }
+        }
+        return Subscription(job)
+    }
+
+    /**
+     * Subscribe to a specific event type.
+     */
     fun <T : E> subscribe(clazz: Class<T>, handler: suspend (T) -> Unit): Subscription {
-        val job = _scope.launch(start = CoroutineStart.UNDISPATCHED) { // important!
-            _events
+        val job = scope.launch(start = CoroutineStart.UNDISPATCHED) {
+            events
                 .filter { clazz.isInstance(it) }
                 .map { clazz.cast(it)!! }
                 .collect { handler(it) }
@@ -57,11 +79,24 @@ open class EventBus<E : Event>(
         return Subscription(job)
     }
 
-    class Subscription(private val job: kotlinx.coroutines.Job) {
-        fun cancel() = job.cancel()
-    }
-
+    /**
+     * Subscribe to a specific event type.
+     */
     inline fun <reified T : E> subscribe(noinline handler: suspend (T) -> Unit): Subscription =
         subscribe(T::class.java, handler)
+
+    /**
+     * Close the event bus and cancel all subscriptions.
+     */
+    fun close() {
+        scope.cancel()
+    }
+
+    /**
+     * Represents a subscription to an event bus.
+     */
+    class Subscription(private val job: Job) {
+        fun cancel() = job.cancel()
+    }
 
 }

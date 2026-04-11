@@ -1,7 +1,7 @@
 /*
  * The MIT License (MIT)
  *
- * Copyright (c) 2025 Jon Brule <brulejr@gmail.com>
+ * Copyright (c) 2026 Jon Brule <brulejr@gmail.com>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -21,48 +21,12 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package io.jrb.labs.commons.eventbus
 
-import java.time.Instant
-import java.util.UUID
+package io.jrb.labs.commons.workflow.api
 
-interface Event {
-
-    /**
-     * The unique identifier for the event.
-     */
-    val eventId: String
-        get() = UUID.randomUUID().toString()
-
-    /**
-     * The name of the event, typically the simple class name.
-     */
-    val name: String
-        get() = javaClass.simpleName
-
-    /**
-     * The timestamp when the event occurred.
-     */
-    val occurredAt: Instant
-        get() = Instant.now()
-
-    /**
-     * Business-level correlation across related events.
-     * Example: orderId, requestId, alertId.
-     */
-    val correlationId: String?
-        get() = null
-
-    /**
-     * The eventId of the event that directly caused this event.
-     */
-    val causationId: String?
-        get() = null
-
-    /**
-     * Optional extensible metadata for tracing, audit, tags, etc.
-     */
-    val metadata: Map<String, Any>
-        get() = emptyMap()
-
-}
+data class RecordedStepResult(
+    val stepName: String,
+    val outcomeType: String,
+    val summary: String,
+    val metadata: Map<String, Any> = emptyMap()
+)
