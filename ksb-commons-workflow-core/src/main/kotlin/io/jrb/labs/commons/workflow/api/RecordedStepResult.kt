@@ -28,5 +28,6 @@ data class RecordedStepResult(
     val stepName: String,
     val outcomeType: String,
     val summary: String,
+    val errorCode: String? = null,
     val metadata: Map<String, Any> = emptyMap()
 )

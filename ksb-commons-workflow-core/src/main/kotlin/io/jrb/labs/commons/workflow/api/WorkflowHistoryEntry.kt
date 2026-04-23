@@ -34,5 +34,6 @@ data class WorkflowHistoryEntry(
     val stepName: String,
     val outcomeType: String,
     val summary: String,
+    val errorCode: String? = null,
     val outboundEventNames: List<String> = emptyList()
 )

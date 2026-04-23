@@ -24,21 +24,13 @@
 
 package io.jrb.labs.commons.workflow.api
 
-import io.jrb.labs.commons.eventbus.Event
-import kotlin.reflect.KClass
-
-interface WorkflowDefinition {
-
-    val name: String
-
-    val primingEventClass: KClass<out Event>
-
-    val initialState: String
-
-    val transitions: List<WorkflowTransition<*, *>>
-
-    fun correlationIdOf(event: Event): String
-
-    fun requestIdOf(event: Event): String? = correlationIdOf(event)
-
-}
+data class WorkflowFailureDetails(
+    val requestId: String?,
+    val correlationId: String,
+    val instanceId: String,
+    val workflowName: String,
+    val stepName: String,
+    val errorCode: String?,
+    val message: String,
+    val metadata: Map<String, Any> = emptyMap()
+)

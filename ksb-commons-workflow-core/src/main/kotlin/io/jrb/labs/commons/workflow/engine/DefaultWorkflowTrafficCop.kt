@@ -32,8 +32,11 @@ import io.jrb.labs.commons.workflow.api.StepResult.Failed
 import io.jrb.labs.commons.workflow.api.StepResult.Ignored
 import io.jrb.labs.commons.workflow.api.StepResult.Success
 import io.jrb.labs.commons.workflow.api.StepResult.Waiting
+import io.jrb.labs.commons.workflow.api.WorkflowContext
 import io.jrb.labs.commons.workflow.api.WorkflowDefinition
 import io.jrb.labs.commons.workflow.api.WorkflowEvent
+import io.jrb.labs.commons.workflow.api.WorkflowFailedEvent
+import io.jrb.labs.commons.workflow.api.WorkflowFailureDetails
 import io.jrb.labs.commons.workflow.api.WorkflowHistoryEntry
 import io.jrb.labs.commons.workflow.api.WorkflowInstance
 import io.jrb.labs.commons.workflow.api.WorkflowRegistry
@@ -82,12 +85,18 @@ class DefaultWorkflowTrafficCop(
         event: Event
     ) {
         val correlationId = definition.correlationIdOf(event)
+        val requestId = definition.requestIdOf(event)
 
         val instance = WorkflowInstance(
             workflowName = definition.name,
             correlationId = correlationId,
             state = definition.initialState,
-            status = WorkflowStatus.RUNNING
+            status = WorkflowStatus.RUNNING,
+            context = WorkflowContext(
+                attributes = buildMap {
+                    requestId?.let { put("requestId", it) }
+                }
+            )
         )
 
         instanceStore.save(instance)
@@ -124,7 +133,8 @@ class DefaultWorkflowTrafficCop(
         val recorded = RecordedStepResult(
             stepName = typedTransition.step.name,
             outcomeType = result::class.simpleName ?: "Unknown",
-            summary = summarize(result)
+            summary = summarize(result),
+            errorCode = failureCode(result)
         )
 
         val updatedContext = resolution.contextMutator(instance.context)
@@ -142,11 +152,24 @@ class DefaultWorkflowTrafficCop(
                 stepName = typedTransition.step.name,
                 outcomeType = result::class.simpleName ?: "Unknown",
                 summary = summarize(result),
+                errorCode = failureCode(result),
                 outboundEventNames = resolution.outboundEvents.map { it.event.name }
             )
         )
 
         instanceStore.save(updatedInstance)
+
+        if (result is StepResult.Failed) {
+            eventPublisher.publish(
+                WorkflowFailedEvent(
+                    failure = failureDetails(
+                        instance = updatedInstance,
+                        stepName = typedTransition.step.name,
+                        result = result
+                    )
+                )
+            )
+        }
 
         resolution.outboundEvents.forEach { routed ->
             eventPublisher.publish(routed.event)
@@ -161,5 +184,26 @@ class DefaultWorkflowTrafficCop(
             is Ignored -> result.reason
             is Waiting -> result.reason
         }
+
+    private fun failureCode(result: StepResult<*>): String? =
+        when (result) {
+            is StepResult.Failed -> result.code
+            else -> null
+        }
+
+    private fun failureDetails(
+        instance: WorkflowInstance,
+        stepName: String,
+        result: StepResult.Failed
+    ): WorkflowFailureDetails =
+        WorkflowFailureDetails(
+            requestId = instance.context.attributes["requestId"] as? String,
+            correlationId = instance.correlationId,
+            instanceId = instance.instanceId,
+            workflowName = instance.workflowName,
+            stepName = stepName,
+            errorCode = result.code,
+            message = result.reason
+        )
 
 }
