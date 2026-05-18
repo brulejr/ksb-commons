@@ -1,7 +1,7 @@
 /*
  * The MIT License (MIT)
  *
- * Copyright (c) 2026 Jon Brule <brulejr@gmail.com>
+ * Copyright (c) 2026 Jon Brule
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -25,7 +25,9 @@
 package io.jrb.labs.commons.workflow.engine
 
 import io.jrb.labs.commons.eventbus.Event
+import io.jrb.labs.commons.workflow.api.OutcomeResolution
 import io.jrb.labs.commons.workflow.api.RecordedStepResult
+import io.jrb.labs.commons.workflow.api.RoutedEvent
 import io.jrb.labs.commons.workflow.api.StepResult
 import io.jrb.labs.commons.workflow.api.StepResult.Errored
 import io.jrb.labs.commons.workflow.api.StepResult.Failed
@@ -35,6 +37,7 @@ import io.jrb.labs.commons.workflow.api.StepResult.Waiting
 import io.jrb.labs.commons.workflow.api.WorkflowContext
 import io.jrb.labs.commons.workflow.api.WorkflowDefinition
 import io.jrb.labs.commons.workflow.api.WorkflowEvent
+import io.jrb.labs.commons.workflow.api.WorkflowEventEnvelope
 import io.jrb.labs.commons.workflow.api.WorkflowFailedEvent
 import io.jrb.labs.commons.workflow.api.WorkflowFailureDetails
 import io.jrb.labs.commons.workflow.api.WorkflowHistoryEntry
@@ -42,6 +45,8 @@ import io.jrb.labs.commons.workflow.api.WorkflowInstance
 import io.jrb.labs.commons.workflow.api.WorkflowRegistry
 import io.jrb.labs.commons.workflow.api.WorkflowStatus
 import io.jrb.labs.commons.workflow.api.WorkflowTransition
+import io.jrb.labs.commons.workflow.api.workflowEnvelope
+import io.jrb.labs.commons.workflow.api.workflowPayload
 import io.jrb.labs.commons.workflow.spi.WorkflowEventPublisher
 import io.jrb.labs.commons.workflow.spi.WorkflowInstanceStore
 import java.time.Instant
@@ -55,29 +60,38 @@ class DefaultWorkflowTrafficCop(
 ) : WorkflowTrafficCop {
 
     override suspend fun handleEvent(event: Event) {
+        val envelope = event.workflowEnvelope()
 
-        val byInstance = (event as? WorkflowEvent)
-            ?.workflowInstanceId
-            ?.let { instanceStore.findByInstanceId(it) }
-
-        if (byInstance != null) {
-            advanceExistingWorkflow(byInstance, event)
+        if (envelope != null) {
+            handleWorkflowEnvelope(envelope)
             return
         }
 
-        val byCorrelation = event.correlationId
-            ?.let { instanceStore.findByCorrelationId(it) }
-            .orEmpty()
+        val explicitInstance = (event as? WorkflowEvent)
+            ?.workflowInstanceId
+            ?.let { instanceStore.findByInstanceId(it) }
 
-        if (byCorrelation.isNotEmpty()) {
-            byCorrelation.forEach { advanceExistingWorkflow(it, event) }
+        if (explicitInstance != null) {
+            advanceExistingWorkflow(explicitInstance, event)
             return
         }
 
         val primedDefinitions = workflowRegistry.findByPrimingEvent(event)
+
         primedDefinitions.forEach { definition ->
             startWorkflow(definition, event)
         }
+    }
+
+    private suspend fun handleWorkflowEnvelope(envelope: WorkflowEventEnvelope<*>) {
+        val instance = instanceStore.findByInstanceId(envelope.workflowInstanceId)
+            ?: return
+
+        if (instance.workflowName != envelope.workflowName) {
+            return
+        }
+
+        advanceExistingWorkflow(instance, envelope)
     }
 
     private suspend fun startWorkflow(
@@ -100,10 +114,10 @@ class DefaultWorkflowTrafficCop(
         )
 
         instanceStore.save(instance)
+
         advanceExistingWorkflow(instance, event)
     }
 
-    @Suppress("UNCHECKED_CAST")
     private suspend fun advanceExistingWorkflow(
         instance: WorkflowInstance,
         event: Event
@@ -112,68 +126,101 @@ class DefaultWorkflowTrafficCop(
             .firstOrNull { it.name == instance.workflowName }
             ?: return
 
+        val inboundEvent = event.workflowPayload()
+
         val transition = transitionMatcher.findMatchingTransition(
             definition = definition,
             currentState = instance.state,
-            event = event
+            event = inboundEvent
         ) ?: return
 
-        val typedTransition = transition as WorkflowTransition<Event, Event>
-        val typedEvent = event as Event
-
-        val invocation = StepInvocation(
+        val execution = executeTransition(
             instance = instance,
-            event = typedEvent,
-            step = typedTransition.step
+            inboundEvent = inboundEvent,
+            transition = transition
         )
-
-        val result = stepExecutor.execute(invocation)
-        val resolution = typedTransition.outcomeRouter.route(result, instance)
 
         val recorded = RecordedStepResult(
-            stepName = typedTransition.step.name,
-            outcomeType = result::class.simpleName ?: "Unknown",
-            summary = summarize(result),
-            errorCode = failureCode(result)
+            stepName = execution.stepName,
+            outcomeType = execution.result::class.simpleName ?: "Unknown",
+            summary = summarize(execution.result),
+            errorCode = failureCode(execution.result)
         )
 
-        val updatedContext = resolution.contextMutator(instance.context)
-            .withRecordedStepResult(typedTransition.step.name, recorded)
+        val updatedContext = execution.resolution.contextMutator(instance.context)
+            .withRecordedStepResult(execution.stepName, recorded)
 
         val updatedInstance = instance.copy(
-            state = resolution.nextState,
-            status = resolution.nextStatus,
+            state = execution.resolution.nextState,
+            status = execution.resolution.nextStatus,
             updatedAt = Instant.now(),
             context = updatedContext,
             history = instance.history + WorkflowHistoryEntry(
                 stateBefore = instance.state,
-                stateAfter = resolution.nextState,
-                inboundEventName = event.name,
-                stepName = typedTransition.step.name,
-                outcomeType = result::class.simpleName ?: "Unknown",
-                summary = summarize(result),
-                errorCode = failureCode(result),
-                outboundEventNames = resolution.outboundEvents.map { it.event.name }
+                stateAfter = execution.resolution.nextState,
+                inboundEventName = inboundEvent.name,
+                stepName = execution.stepName,
+                outcomeType = execution.result::class.simpleName ?: "Unknown",
+                summary = summarize(execution.result),
+                errorCode = failureCode(execution.result),
+                outboundEventNames = execution.resolution.outboundEvents.map { routedEvent: RoutedEvent ->
+                    routedEvent.event.name
+                }
             )
         )
 
         instanceStore.save(updatedInstance)
 
-        if (result is StepResult.Failed) {
+        if (execution.result is Failed) {
             eventPublisher.publish(
                 WorkflowFailedEvent(
                     failure = failureDetails(
                         instance = updatedInstance,
-                        stepName = typedTransition.step.name,
-                        result = result
+                        stepName = execution.stepName,
+                        result = execution.result
                     )
                 )
             )
         }
 
-        resolution.outboundEvents.forEach { routed ->
-            eventPublisher.publish(routed.event)
+        execution.resolution.outboundEvents.forEach { routedEvent ->
+            eventPublisher.publish(
+                WorkflowEventEnvelope(
+                    workflowName = updatedInstance.workflowName,
+                    workflowInstanceId = updatedInstance.instanceId,
+                    workflowState = updatedInstance.state,
+                    payload = routedEvent.event
+                )
+            )
         }
+    }
+
+    @Suppress("UNCHECKED_CAST")
+    private suspend fun executeTransition(
+        instance: WorkflowInstance,
+        inboundEvent: Event,
+        transition: WorkflowTransition<out Event, out Event>
+    ): TransitionExecution {
+        val typedTransition = transition as WorkflowTransition<Event, Event>
+
+        val invocation = StepInvocation(
+            instance = instance,
+            event = inboundEvent,
+            step = typedTransition.step
+        )
+
+        val result = stepExecutor.execute(invocation)
+
+        val resolution = typedTransition.outcomeRouter.route(
+            result = result,
+            instance = instance
+        )
+
+        return TransitionExecution(
+            stepName = typedTransition.step.name,
+            result = result,
+            resolution = resolution
+        )
     }
 
     private fun summarize(result: StepResult<*>): String =
@@ -187,14 +234,14 @@ class DefaultWorkflowTrafficCop(
 
     private fun failureCode(result: StepResult<*>): String? =
         when (result) {
-            is StepResult.Failed -> result.code
+            is Failed -> result.code
             else -> null
         }
 
     private fun failureDetails(
         instance: WorkflowInstance,
         stepName: String,
-        result: StepResult.Failed
+        result: Failed
     ): WorkflowFailureDetails =
         WorkflowFailureDetails(
             requestId = instance.context.attributes["requestId"] as? String,
@@ -205,5 +252,11 @@ class DefaultWorkflowTrafficCop(
             errorCode = result.code,
             message = result.reason
         )
+
+    private data class TransitionExecution(
+        val stepName: String,
+        val result: StepResult<*>,
+        val resolution: OutcomeResolution
+    )
 
 }

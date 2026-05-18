@@ -1,7 +1,7 @@
 /*
  * The MIT License (MIT)
  *
- * Copyright (c) 2026 Jon Brule <brulejr@gmail.com>
+ * Copyright (c) 2026 Jon Brule
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -51,21 +51,27 @@ class DefaultBlockingWorkflowRunner(
 
         return try {
             eventBus.publish(startEvent)
+
             @Suppress("UNCHECKED_CAST")
             withTimeout(timeout.toMillis()) {
                 deferred.await() as T
             }
         } finally {
-            waiters.remove(correlationId)
+            waiters.remove(correlationId, deferred)
         }
     }
 
-    fun complete(correlationId: String, terminalEvent: Event) {
-        waiters[correlationId]?.complete(terminalEvent)
+    fun complete(
+        correlationId: String,
+        terminalEvent: Event
+    ) {
+        waiters.remove(correlationId)?.complete(terminalEvent)
     }
 
-    fun fail(correlationId: String, throwable: Throwable) {
-        waiters[correlationId]?.completeExceptionally(throwable)
+    fun fail(
+        correlationId: String,
+        throwable: Throwable
+    ) {
+        waiters.remove(correlationId)?.completeExceptionally(throwable)
     }
-
 }

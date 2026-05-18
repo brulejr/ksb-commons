@@ -22,25 +22,15 @@
  * SOFTWARE.
  */
 
-package io.jrb.labs.commons.workflow.engine
+package io.jrb.labs.commons.workflow.api
 
 import io.jrb.labs.commons.eventbus.Event
-import io.jrb.labs.commons.workflow.api.WorkflowDefinition
-import io.jrb.labs.commons.workflow.api.WorkflowTransition
-import io.jrb.labs.commons.workflow.api.workflowPayload
 
-class TransitionMatcher {
+fun Event.workflowEnvelope(): WorkflowEventEnvelope<*>? =
+    this as? WorkflowEventEnvelope<*>
 
-    fun findMatchingTransition(
-        definition: WorkflowDefinition,
-        currentState: String,
-        event: Event
-    ): WorkflowTransition<out Event, out Event>? {
-        val payload = event.workflowPayload()
-
-        return definition.transitions.firstOrNull { transition ->
-            transition.fromState == currentState &&
-                    transition.inboundEventClass.isInstance(payload)
-        }
+fun Event.workflowPayload(): Event =
+    when (this) {
+        is WorkflowEventEnvelope<*> -> this.payload
+        else -> this
     }
-}
